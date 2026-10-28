@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoadGuard AI — Human-in-the-Loop Hazard Recognition & Training Studio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="logo-area">
+            <div class="brand-icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h1>RoadGuard AI <span class="badge-version">v2.5-ACTIVE-LEARNING</span></h1>
+                <p class="tagline">Human-in-the-Loop Road Hazard Recognition & Direct Verified Training</p>
+            </div>
+        </div>
+        <div class="header-status">
+            <button id="btnOpenTrainer" class="btn btn-trainer">
+                <i class="fa-solid fa-brain"></i> <span>Open Training Studio</span>
+            </button>
+            <div class="engine-selector">
+                <label for="engineSelect"><i class="fa-solid fa-microchip"></i> Engine:</label>
+                <select id="engineSelect">
+                    <option value="auto">🌟 Auto Ensemble (Roboflow Potholes + YOLO)</option>
+                    <option value="roboflow">🎯 Roboflow Cloud (pothole-detection-i00zy)</option>
+                    <option value="yolo_only">🧠 Local YOLOv8 Neural Net</option>
+                    <option value="cv_only">⚡ CV Morphology Only</option>
+                </select>
+            </div>
+            <label class="memory-toggle" title="If checked, recalls your saved ground truth. Uncheck to test raw AI predictions.">
+                <input type="checkbox" id="chkUseMemory" checked>
+                <span><i class="fa-solid fa-bookmark"></i> Recall Verified</span>
+            </label>
+        </div>
+    </header>
+
+    <!-- IN-APP TRAINING STUDIO MODAL -->
+    <div id="trainerModal" class="trainer-modal" style="display: none;">
+        <div class="trainer-content">
+            <div class="trainer-header">
+                <div class="trainer-title">
+                    <i class="fa-solid fa-user-check"></i>
+                    <div>
+                        <h2>Human-Verified AI Training Studio</h2>
+                        <p>Train your AI on real road photos and human-confirmed hazard annotations</p>
+                    </div>
+                </div>
+                <button id="btnCloseTrainer" class="btn-close">&times;</button>
+            </div>
+
+            <div class="trainer-grid">
+                <!-- Training Controls Column -->
+                <div class="trainer-col">
+                    <!-- Verified Data Library Counter -->
+                    <div class="verified-library-box">
+                        <div class="library-header">
+                            <span class="lib-badge"><i class="fa-solid fa-check-double"></i> Human-in-the-Loop</span>
+                            <span id="verifiedBadgeCount" class="verified-count-tag">0 Verified Real Photos</span>
+                        </div>
+                        <p class="verified-desc">The AI will learn directly from the corrections and real road hazards you have verified.</p>
+                    </div>
+
+                    <div class="setting-group">
+                        <label><i class="fa-solid fa-sliders"></i> Training Presets</label>
+                        <div class="preset-buttons">
+                            <button class="preset-btn active" data-epochs="3" data-batch="4">
+                                <span class="preset-name">⚡ Rapid Prototype</span>
+                                <span class="preset-desc">3 Epochs (~1 min)</span>
+                            </button>
+                            <button class="preset-btn" data-epochs="10" data-batch="4">
+                                <span class="preset-name">🎯 Balanced Fine-Tune</span>
+                                <span class="preset-desc">10 Epochs (Recommended)</span>
+                            </button>
+                            <button class="preset-btn" data-epochs="20" data-batch="8">
+                                <span class="preset-name">🧠 Deep Convergence</span>
+                                <span class="preset-desc">20 Epochs (High Accuracy)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="model-switch-box">
+                        <label><i class="fa-solid fa-rotate"></i> Active Neural Model</label>
+                        <div class="switch-buttons">
+                            <button id="btnSwitchRoboflow" class="btn-switch active">
+                                <i class="fa-solid fa-cloud-bolt text-emerald"></i> Roboflow Cloud (pothole-detection-i00zy)
+                            </button>
+                            <button id="btnSwitchRDD" class="btn-switch">
+                                <i class="fa-solid fa-shield-halved"></i> Real-World RDD Model (26k+ Roads)
+                            </button>
+                            <button id="btnSwitchCustom" class="btn-switch">
+                                <i class="fa-solid fa-star"></i> My Custom Fine-Tuned Model
+                            </button>
+                        </div>
+                    </div>
+
+                    <button id="btnStartTraining" class="btn btn-primary btn-large btn-full">
+                        <i class="fa-solid fa-play"></i> Train AI on Verified Dataset
+                    </button>
+                </div>
+
+                <!-- Training Monitor Column -->
+                <div class="trainer-col monitor-col">
+                    <div class="monitor-header">
+                        <h3><i class="fa-solid fa-chart-line"></i> Live Training Telemetry</h3>
+                        <span id="trainingStatusBadge" class="badge-status idle">IDLE</span>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress-section">
+                        <div class="progress-labels">
+                            <span id="progressEpochText">Epoch 0 / 0</span>
+                            <span id="progressPctText">0%</span>
+                        </div>
+                        <div class="hud-progress-bar">
+                            <div id="hudProgressFill" class="hud-progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <!-- Metric Cards -->
+                    <div class="telemetry-cards">
+                        <div class="t-card">
+                            <span class="t-label">Loss</span>
+                            <span id="tLoss" class="t-val">--</span>
+                        </div>
+                        <div class="t-card">
+                            <span class="t-label">Elapsed</span>
+                            <span id="tElapsed" class="t-val">0s</span>
+                        </div>
+                        <div class="t-card">
+                            <span class="t-label">Verified Set</span>
+                            <span id="tVerified" class="t-val">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Log Stream -->
+                    <div class="terminal-log-box">
+                        <div class="terminal-bar">
+                            <span><i class="fa-solid fa-terminal"></i> Activity Log</span>
+                        </div>
+                        <div id="terminalLogs" class="terminal-logs">
+                            <p class="log-line text-muted">Ready to train. Upload photos, review predictions, and click 'Train AI'.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="dashboard-grid">
+        <!-- Left Column: Video/Image Inspection & Correction -->
+        <section class="card viewer-card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-camera"></i> Hazard Vision Feed</h2>
+                <div class="card-actions">
+                    <button id="btnToggleCorrection" class="btn btn-correction">
+                        <i class="fa-solid fa-pen-ruler"></i> <span id="toggleCorrectionText">Review & Correct AI</span>
+                    </button>
+                    <label class="btn btn-primary file-upload-btn">
+                        <i class="fa-solid fa-upload"></i> Upload My Photo
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Interactive Annotation / Correction Toolbar (Visible in correction mode) -->
+            <div id="correctionToolbar" class="correction-toolbar" style="display: none;">
+                <div class="toolbar-left">
+                    <span class="tool-label"><i class="fa-solid fa-crosshairs"></i> Draw Missed Hazard:</span>
+                    <select id="drawClassSelect" class="class-picker">
+                        <option value="pothole">🔴 Pothole (Critical)</option>
+                        <option value="road_crack">🟠 Road Crack (Medium)</option>
+                        <option value="debris">🟡 Obstacles & Debris (High)</option>
+                        <option value="standing_water">🔵 Standing Water (Medium)</option>
+                        <option value="construction_barrier">🔶 Barrier / Cone (Warning)</option>
+                    </select>
+                    <span class="tool-hint">Click & drag on the image to add a box. Click ✖ on any false alarm to delete it.</span>
+                </div>
+                <div class="toolbar-right">
+                    <button id="btnSaveVerified" class="btn btn-save-verified">
+                        <i class="fa-solid fa-check"></i> Save & Add to Training Set
+                    </button>
+                </div>
+            </div>
+
+            <div class="viewer-container" id="dropZone">
+                <div class="overlay-badge" id="conditionBadge">
+                    <span id="conditionText">READY FOR INSPECTION</span>
+                </div>
+                
+                <div class="display-wrapper" id="displayWrapper">
+                    <img id="mainDisplay" src="" alt="Road Inspection View" style="display: none;">
+                    <!-- Interactive Canvas for drawing / editing bounding boxes -->
+                    <canvas id="annotationCanvas" style="display: none;"></canvas>
+                    
+                    <div id="emptyPlaceholder" class="empty-placeholder">
+                        <i class="fa-solid fa-road"></i>
+                        <p>Drag & drop your own road photo, or pick a sample scenario below</p>
+                    </div>
+                </div>
+
+                <div class="loader" id="loader" style="display: none;">
+                    <div class="spinner"></div>
+                    <p id="loaderText">Running neural detection filters...</p>
+                </div>
+            </div>
+
+            <!-- Quick Showcase Sample Carousel -->
+            <div class="samples-section">
+                <h3><i class="fa-solid fa-images"></i> Quick Test Scenarios:</h3>
+                <div class="sample-pills" id="samplePills"></div>
+            </div>
+        </section>
+
+        <!-- Right Column: Safety Telemetry & Hazard Analysis -->
+        <aside class="sidebar-column">
+            <!-- Road Condition Gauge -->
+            <div class="card metric-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-gauge-high"></i> Road Risk Assessment</h2>
+                    <span class="score-display" id="riskScore">0 / 100</span>
+                </div>
+                <div class="risk-bar-container">
+                    <div class="risk-bar-fill" id="riskBar"></div>
+                </div>
+                <div class="risk-markers">
+                    <span>Safe (0-30)</span>
+                    <span>Caution (31-60)</span>
+                    <span>Dangerous (61+)</span>
+                </div>
+            </div>
+
+            <!-- Hazard Breakdown -->
+            <div class="card hazard-stats-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-list-check"></i> Detected Hazards</h2>
+                    <span class="badge" id="totalHazardsCount">0 Total</span>
+                </div>
+                <div class="hazard-grid" id="hazardBreakdown">
+                    <div class="hazard-item item-pothole">
+                        <div class="item-icon"><i class="fa-solid fa-circle-dot"></i></div>
+                        <div class="item-info">
+                            <span class="item-name">Potholes</span>
+                            <span class="item-sev badge-crit">CRITICAL</span>
+                        </div>
+                        <span class="item-count" id="count-pothole">0</span>
+                    </div>
+
+                    <div class="hazard-item item-crack">
+                        <div class="item-icon"><i class="fa-solid fa-bolt"></i></div>
+                        <div class="item-info">
+                            <span class="item-name">Road Cracks</span>
+                            <span class="item-sev badge-med">MEDIUM</span>
+                        </div>
+                        <span class="item-count" id="count-crack">0</span>
+                    </div>
+
+                    <div class="hazard-item item-debris">
+                        <div class="item-icon"><i class="fa-solid fa-box-open"></i></div>
+                        <div class="item-info">
+                            <span class="item-name">Obstacles & Debris</span>
+                            <span class="item-sev badge-high">HIGH</span>
+                        </div>
+                        <span class="item-count" id="count-debris">0</span>
+                    </div>
+
+                    <div class="hazard-item item-water">
+                        <div class="item-icon"><i class="fa-solid fa-water"></i></div>
+                        <div class="item-info">
+                            <span class="item-name">Standing Water</span>
+                            <span class="item-sev badge-med">MEDIUM</span>
+                        </div>
+                        <span class="item-count" id="count-water">0</span>
+                    </div>
+
+                    <div class="hazard-item item-barrier">
+                        <div class="item-icon"><i class="fa-solid fa-traffic-light"></i></div>
+                        <div class="item-info">
+                            <span class="item-name">Barriers & Cones</span>
+                            <span class="item-sev badge-warn">WARNING</span>
+                        </div>
+                        <span class="item-count" id="count-barrier">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Work Order & Action Directives -->
+            <div class="card directives-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-helmet-safety"></i> Infrastructure Directives</h2>
+                </div>
+                <div class="directives-list" id="directivesList">
+                    <div class="directive-empty">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                        <p>No active hazards detected yet. Upload or pick a scene.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dataset & Training Status -->
+            <div class="card system-stats-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-database"></i> Training Library Status</h2>
+                    <button id="btnQuickTrainLink" class="btn-link"><i class="fa-solid fa-gear"></i> Train</button>
+                </div>
+                <div class="stats-row">
+                    <div><span>Human-Verified:</span> <strong id="trainCount" class="text-emerald">0 photos</strong></div>
+                    <div><span>Active Model:</span> <strong id="yoloWeightsStatus">Checking...</strong></div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
