@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 btnSwitchRoboflow.classList.add("active");
                 btnSwitchRDD.classList.remove("active");
                 btnSwitchCustom.classList.remove("active");
-                yoloWeightsStatus.textContent = "Roboflow Cloud (pothole-detection-i00zy/2)";
+                yoloWeightsStatus.textContent = "Roboflow Cloud (pothole-detection-jnjlz)";
             } else {
                 const res = await fetch("/api/model/switch", {
                     method: "POST",

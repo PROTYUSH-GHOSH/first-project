@@ -1,7 +1,7 @@
 """
 Roboflow Pothole Detection Client
-Interfaces with the user's pre-trained Roboflow Serverless API model:
-model_id: pothole-detection-i00zy/2
+Interfaces with the user's Roboflow Serverless API model:
+model_id: pothole-detection-jnjlz/1
 """
 
 import os
@@ -14,7 +14,9 @@ import numpy as np
 
 ROBOFLOW_API_URL = "https://serverless.roboflow.com"
 ROBOFLOW_API_KEY = os.environ.get("ROBOFLOW_API_KEY", "t1PnMzE1T5HZPqo4GJ43")
-ROBOFLOW_MODEL_ID = "pothole-detection-i00zy/2"
+ROBOFLOW_WORKSPACE = os.environ.get("ROBOFLOW_WORKSPACE", "protyushs-workspace")
+ROBOFLOW_PROJECT = os.environ.get("ROBOFLOW_PROJECT", "pothole-detection-jnjlz")
+ROBOFLOW_MODEL_ID = os.environ.get("ROBOFLOW_MODEL_ID", "pothole-detection-jnjlz/1")
 
 class RoboflowPotholeDetector:
     def __init__(self, api_key=None, model_id=None, min_confidence=0.35):

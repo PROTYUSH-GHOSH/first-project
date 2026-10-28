@@ -1,7 +1,7 @@
 """
 Ensemble Hazard Detection Engine
 Combines:
-1. Roboflow Dedicated Pothole Cloud Neural Vision (pothole-detection-i00zy/2)
+1. Roboflow Dedicated Pothole Cloud Neural Vision (pothole-detection-jnjlz/1)
 2. Local YOLOv8 Neural Network (trained on RDD2020 / Fine-tuned)
 3. Morphological CV Localizer (offline fallback)
 """
@@ -42,7 +42,7 @@ class RoadHazardEnsemble:
             rf_res = self.roboflow_detector.detect(img)
             if rf_res["detections"]:
                 all_detections.extend(rf_res["detections"])
-                engine_used.append("Roboflow Cloud Model (pothole-detection-i00zy)")
+                engine_used.append("Roboflow Cloud Model (pothole-detection-jnjlz)")
 
         # 2. Local YOLO Neural Model
         if engine in ["auto", "yolo_only"] and self.yolo_detector.is_available():
